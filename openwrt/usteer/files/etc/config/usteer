@@ -71,6 +71,15 @@ config usteer
 	# Timeout (ms) for which a client will not be steered after rejecting a BSS-transition-request
 	#option steer_reject_timeout 60000
 
+	# Use aggressvice roaming to push clients to another AP
+	#option aggressive_all 0
+
+	# List of MACs to enable aggressive roaming on. If not set all macs will handled aggressive
+	#list aggressive_mac_list ''
+
+	# Disassociation imminent tuner - in aggresive mode the time a client has to roam away before disconnected hardly
+	#option aggressive_disassoc_timer 100
+
 	# Timeout (in ms) after which a association following a disassociation is not seen
 	# as a roam
 	#option roam_process_timeout 5000

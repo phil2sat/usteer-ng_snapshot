@@ -370,8 +370,15 @@ usteer_roam_trigger_sm(struct usteer_local_node *ln, struct sta_info *si)
 			break;
 		}
 
-		usteer_ubus_bss_transition_request(si, 1, false, false, 100, candidate->node);
-		si->kick_time = current_time + config.roam_kick_delay;
+		if (si->sta->aggressive) {
+			// TODO: Disaccociation Timer noch konfigurierbar machen
+			usteer_ubus_bss_transition_request(si, 1, true, config.aggressive_disassoc_timer, true, config.aggressive_disassoc_timer, candidate->node);
+			si->roam_disassoc_time = current_time + (100 * 100);
+		} else {
+			usteer_ubus_bss_transition_request(si, 1, false, 0, true, 100, candidate->node);
+			si->kick_time = current_time + config.roam_kick_delay;
+		}
+
 		usteer_roam_set_state(si, ROAM_TRIGGER_IDLE, &ev);
 		break;
 	}
@@ -400,7 +407,11 @@ bool usteer_policy_can_perform_roam(struct sta_info *si)
 	/* Skip if connection is established shorter than the trigger-interval */
 	if (current_time - si->connected_since < config.roam_trigger_interval)
 		return false;
-	
+
+	/* Skip on aggressive roaming in progress - wait 10s after disassociation event*/
+	if (current_time - si->roam_disassoc_time < 10000)
+		return false;
+
 	return true;
 }
 
