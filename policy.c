@@ -48,6 +48,7 @@ better_signal_strength(int signal_cur, int signal_new)
 	const bool is_better = signal_new - signal_cur
 				> (int) config.signal_diff_threshold;
 
+	//hier das Band noch berücksichtigen wegen höherer Bandbreite bei 5Ghz
 	if (!config.signal_diff_threshold)
 		return false;
 
@@ -322,6 +323,8 @@ static bool
 usteer_roam_trigger_sm(struct usteer_local_node *ln, struct sta_info *si)
 {
 	struct sta_info *candidate;
+	uint32_t disassoc_timer;
+	uint32_t validity_period;
 	struct uevent ev = {
 		.si_cur = si,
 	};
@@ -370,13 +373,15 @@ usteer_roam_trigger_sm(struct usteer_local_node *ln, struct sta_info *si)
 			break;
 		}
 
-		if (si->sta->aggressive) {
-			// TODO: Disaccociation Timer noch konfigurierbar machen
-			usteer_ubus_bss_transition_request(si, 1, true, config.aggressive_disassoc_timer, true, config.aggressive_disassoc_timer, candidate->node);
-			si->roam_disassoc_time = current_time + (100 * 100);
-		} else {
-			usteer_ubus_bss_transition_request(si, 1, false, 0, true, 100, candidate->node);
+		if (!si->kick_time && si->sta->aggressive)
 			si->kick_time = current_time + config.roam_kick_delay;
+
+		validity_period = 10000 / usteer_local_node_get_beacon_interval(ln); /* ~ 10 seconds */
+		if (si->sta->aggressive) {
+			disassoc_timer = (si->kick_time - current_time) / usteer_local_node_get_beacon_interval(ln);
+			usteer_ubus_bss_transition_request(si, 1, true, disassoc_timer, true, validity_period, candidate->node);
+		} else {
+			usteer_ubus_bss_transition_request(si, 1, false, 0, true, validity_period, candidate->node);
 		}
 
 		usteer_roam_set_state(si, ROAM_TRIGGER_IDLE, &ev);
@@ -393,7 +398,7 @@ bool usteer_policy_can_perform_roam(struct sta_info *si)
 		return false;
 
 	/* Skip on pending kick */
-	if (si->kick_time)
+	if (si->kick_time && si->kick_time <= current_time)
 		return false;
 
 	/* Skip on rejected transition */
@@ -406,10 +411,6 @@ bool usteer_policy_can_perform_roam(struct sta_info *si)
 
 	/* Skip if connection is established shorter than the trigger-interval */
 	if (current_time - si->connected_since < config.roam_trigger_interval)
-		return false;
-
-	/* Skip on aggressive roaming in progress - wait 10s after disassociation event*/
-	if (current_time - si->roam_disassoc_time < 10000)
 		return false;
 
 	return true;
