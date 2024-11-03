@@ -173,6 +173,7 @@ struct usteer_config {
 	bool aggressive_all;
 	struct blob_attr *aggressive_mac_list;
 	uint32_t aggressive_disassoc_timer;
+	uint32_t reassociation_delay;
 
 	int32_t min_snr;
 	uint32_t min_snr_kick_delay;
