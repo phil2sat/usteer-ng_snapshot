@@ -673,7 +673,7 @@ usteer_ubus_disassoc_add_neighbors(struct sta_info *si)
 int usteer_ubus_bss_transition_request(struct sta_info *si,
                                        uint8_t dialog_token,
                                        bool disassoc_imminent,
-                                       uint8_t disassoc_timer,
+                                       uint32_t disassoc_timer,
                                        bool abridged,
                                        uint8_t validity_period,
                                        struct usteer_node *target_node)
@@ -697,7 +697,7 @@ int usteer_ubus_bss_transition_request(struct sta_info *si,
 		MSG(VERBOSE, "ROAMING requested for sta=" MAC_ADDR_FMT " without target\n", MAC_ADDR_DATA(si->sta->addr));
 		usteer_ubus_disassoc_add_neighbors(si);
 	} else {
-		MSG(VERBOSE, "ROAMING requested for sta=" MAC_ADDR_FMT " to %s with disassociation timer %i\n", MAC_ADDR_DATA(si->sta->addr), usteer_node_name(target_node), disassoc_timer);
+		MSG(VERBOSE, "ROAMING requested for sta=" MAC_ADDR_FMT " to %s with disassociation timer %u\n", MAC_ADDR_DATA(si->sta->addr), usteer_node_name(target_node), disassoc_timer);
 		usteer_ubus_disassoc_add_neighbor(si, target_node);
 	}
 	return ubus_invoke(ubus_ctx, ln->obj_id, "bss_transition_request", b.head, NULL, 0, 100);
@@ -706,7 +706,7 @@ int usteer_ubus_bss_transition_request(struct sta_info *si,
 int usteer_ubus_band_steering_request(struct sta_info *si,
                                       uint8_t dialog_token,
                                       bool disassoc_imminent,
-                                      uint8_t disassoc_timer,
+                                      uint32_t disassoc_timer,
                                       bool abridged,
                                       uint8_t validity_period)
 {
@@ -735,7 +735,7 @@ int usteer_ubus_band_steering_request(struct sta_info *si,
 	}
 	blobmsg_close_array(&b, c);
 	if (sizeof(si->node) > 0) {
-		MSG(VERBOSE, "BAND STEERING requested for sta=" MAC_ADDR_FMT " with disassociation timer %i\n", MAC_ADDR_DATA(si->sta->addr), disassoc_timer);
+		MSG(VERBOSE, "BAND STEERING requested for sta=" MAC_ADDR_FMT " with disassociation timer %u\n", MAC_ADDR_DATA(si->sta->addr), disassoc_timer);
 		return ubus_invoke(ubus_ctx, ln->obj_id, "bss_transition_request", b.head, NULL, 0, 100);
 	} else
 		MSG(VERBOSE, "BAND STEERING no targets found for sta=" MAC_ADDR_FMT "\n", MAC_ADDR_DATA(si->sta->addr));

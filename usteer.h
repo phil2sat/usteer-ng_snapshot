@@ -347,13 +347,13 @@ int usteer_ubus_trigger_client_scan(struct sta_info *si);
 int usteer_ubus_band_steering_request(struct sta_info *si,
                                       uint8_t dialog_token,
                                       bool disassoc_imminent,
-                                      uint8_t disassoc_timer,
+                                      uint32_t disassoc_timer,
                                       bool abridged,
                                       uint8_t validity_period);
 int usteer_ubus_bss_transition_request(struct sta_info *si,
                                        uint8_t dialog_token,
                                        bool disassoc_imminent,
-                                       uint8_t disassoc_timer,
+                                       uint32_t disassoc_timer,
                                        bool abridged,
                                        uint8_t validity_period,
                                        struct usteer_node *target_node);
