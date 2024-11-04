@@ -373,6 +373,9 @@ usteer_roam_trigger_sm(struct usteer_local_node *ln, struct sta_info *si)
 			break;
 		}
 
+		if (!candidate->node->rrm_nr)
+			MSG(FATAL, "Candiates node rrm nr not returned from hostapd. Neighbor list empty!");
+
 		si->roam_transition_request_validity_end = current_time + 10000;
 		validity_period = 10000 / usteer_local_node_get_beacon_interval(ln); /* ~ 10 seconds */
 		if (si->sta->aggressive) {
