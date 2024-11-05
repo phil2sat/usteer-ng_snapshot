@@ -162,8 +162,8 @@ struct cfg_item {
 	_cfg(U32, remote_update_interval), \
 	_cfg(U32, remote_node_timeout), \
 	_cfg(BOOL, assoc_steering), \
-	_cfg(BOOL, aggressive_all), \
-	_cfg(ARRAY_CB, aggressive_mac_list), \
+	_cfg(U32, aggressiveness), \
+	_cfg(ARRAY_CB, aggressiveness_mac_list), \
 	_cfg(U32, aggressive_disassoc_timer), \
 	_cfg(I32, min_connect_snr), \
 	_cfg(I32, min_snr), \
@@ -686,18 +686,18 @@ int usteer_ubus_bss_transition_request(struct sta_info *si,
 	blobmsg_add_u8(&b, "disassociation_imminent", disassoc_imminent);
 	if (disassoc_imminent) {
 		blobmsg_add_u32(&b, "disassociation_timer", disassoc_timer);
+		blobmsg_add_u32(&b, "reassoc_delay", config.reassociation_delay);
 	}
 	blobmsg_add_u8(&b, "abridged", abridged);
 	blobmsg_add_u32(&b, "validity_period", validity_period);
 	blobmsg_add_u32(&b, "mbo_reason", 5);
-	blobmsg_add_u32(&b, "reassoc_delay", config.reassociation_delay);
 
 	if (!target_node) {
 		// Add all known neighbors if no specific target set
 		MSG(VERBOSE, "ROAMING sta=" MAC_ADDR_FMT " without target\n", MAC_ADDR_DATA(si->sta->addr));
 		usteer_ubus_disassoc_add_neighbors(si);
 	} else {
-		MSG(VERBOSE, "ROAMING sta=" MAC_ADDR_FMT " to " MAC_ADDR_FMT " (%s) disassociation timer %u\n", MAC_ADDR_DATA(target_node->bssid), MAC_ADDR_DATA(si->sta->addr), usteer_node_name(target_node), disassoc_timer);
+		MSG(VERBOSE, "ROAMING sta=" MAC_ADDR_FMT " to " MAC_ADDR_FMT " (%s) disassociation timer %u\n", MAC_ADDR_DATA(si->sta->addr), MAC_ADDR_DATA(target_node->bssid), usteer_node_name(target_node), disassoc_timer);
 		usteer_ubus_disassoc_add_neighbor(si, target_node);
 	}
 	return ubus_invoke(ubus_ctx, ln->obj_id, "bss_transition_request", b.head, NULL, 0, 100);
@@ -720,11 +720,11 @@ int usteer_ubus_band_steering_request(struct sta_info *si,
 	blobmsg_add_u8(&b, "disassociation_imminent", disassoc_imminent);
 	if (disassoc_imminent) {
 		blobmsg_add_u32(&b, "disassociation_timer", disassoc_timer);
+		blobmsg_add_u32(&b, "reassoc_delay", config.reassociation_delay);
 	}
 	blobmsg_add_u8(&b, "abridged", abridged);
 	blobmsg_add_u32(&b, "validity_period", validity_period);
 	blobmsg_add_u32(&b, "mbo_reason", 5);
-	blobmsg_add_u32(&b, "reassoc_delay", config.reassociation_delay);
 
 	c = blobmsg_open_array(&b, "neighbors");
 	for_each_local_node(node) {

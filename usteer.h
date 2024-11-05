@@ -170,8 +170,8 @@ struct usteer_config {
 	uint32_t remote_update_interval;
 	uint32_t remote_node_timeout;
 
-	bool aggressive_all;
-	struct blob_attr *aggressive_mac_list;
+	uint32_t aggressiveness;
+	struct blob_attr *aggressiveness_mac_list;
 	uint32_t aggressive_disassoc_timer;
 	uint32_t reassociation_delay;
 
@@ -260,6 +260,7 @@ struct sta_info {
 	uint8_t roam_tries;
 	uint64_t roam_event;
 	uint64_t roam_transition_request_validity_end;
+	uint64_t roam_transition_start;
 	uint64_t roam_kick;
 	uint64_t roam_scan_start;
 	uint64_t roam_scan_timeout_start;
@@ -291,7 +292,7 @@ struct sta {
 	uint8_t seen_2ghz : 1;
 	uint8_t seen_5ghz : 1;
 
-	bool aggressive;
+	uint32_t aggressiveness;
 
 	uint8_t addr[6];
 };
@@ -390,8 +391,8 @@ void config_get_node_up_script(struct blob_buf *buf);
 void config_set_ssid_list(struct blob_attr *data);
 void config_get_ssid_list(struct blob_buf *buf);
 
-void config_set_aggressive_mac_list(struct blob_attr *data);
-void config_get_aggressive_mac_list(struct blob_buf *buf);
+void config_set_aggressiveness_mac_list(struct blob_attr *data);
+void config_get_aggressiveness_mac_list(struct blob_buf *buf);
 
 int usteer_interface_init(void);
 void usteer_interface_add(const char *name);

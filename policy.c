@@ -366,6 +366,13 @@ usteer_roam_trigger_sm(struct usteer_local_node *ln, struct sta_info *si)
 		break;
 
 	case ROAM_TRIGGER_SCAN_DONE:
+		/* Roaming time over, switch back to ROAM_TRIGGER_IDLE */
+		if (si->roam_transition_start && current_time - si->roam_transition_start > config.roam_kick_delay) {
+			si->roam_transition_start = 0;
+			usteer_roam_set_state(si, ROAM_TRIGGER_IDLE, &ev);
+			break;
+		}
+
 		candidate = usteer_roam_sm_found_better_node(si, &ev, ROAM_TRIGGER_SCAN_DONE);
 		/* Kick back in case no better node is found */
 		if (!candidate) {
@@ -376,18 +383,27 @@ usteer_roam_trigger_sm(struct usteer_local_node *ln, struct sta_info *si)
 		if (!candidate->node->rrm_nr)
 			MSG(FATAL, "Candiates node rrm nr not returned from hostapd. Neighbor list empty!");
 
+		if (!si->roam_transition_start)
+			si->roam_transition_start = current_time;
 		si->roam_transition_request_validity_end = current_time + 10000;
 		validity_period = 10000 / usteer_local_node_get_beacon_interval(ln); /* ~ 10 seconds */
-		if (si->sta->aggressive) {
+		if (si->sta->aggressiveness >= 2) {
 			if (!si->kick_time)
 				si->kick_time = current_time + config.roam_kick_delay;
-			disassoc_timer = (si->kick_time - current_time) / usteer_local_node_get_beacon_interval(ln);
+			if (si->sta->aggressiveness >= 3)
+				disassoc_timer = (si->kick_time - current_time) / usteer_local_node_get_beacon_interval(ln);
+			else
+				disassoc_timer = 0;
 			usteer_ubus_bss_transition_request(si, 1, true, disassoc_timer, true, validity_period, candidate->node);
+			/* Countdown end */
+			if (disassoc_timer < validity_period) {
+				si->roam_transition_start = 0;
+				usteer_roam_set_state(si, ROAM_TRIGGER_IDLE, &ev);
+			}
 		} else {
 			usteer_ubus_bss_transition_request(si, 1, false, 0, true, validity_period, candidate->node);
+			usteer_roam_set_state(si, ROAM_TRIGGER_IDLE, &ev);
 		}
-
-		usteer_roam_set_state(si, ROAM_TRIGGER_IDLE, &ev);
 		break;
 	}
 
@@ -400,6 +416,10 @@ bool usteer_policy_can_perform_roam(struct sta_info *si)
 	if (si->connected != STA_CONNECTED)
 		return false;
 
+	/* Only trigger for STA with active roaming */
+	if (!si->sta->aggressiveness)
+		return false;
+
 	/* Skip on pending kick */
 	if (si->kick_time && si->kick_time <= current_time)
 		return false;
@@ -410,6 +430,10 @@ bool usteer_policy_can_perform_roam(struct sta_info *si)
 
 	/* Skip on rejected transition */
 	if (si->bss_transition_response.status_code && current_time - si->bss_transition_response.timestamp < config.steer_reject_timeout)
+		return false;
+
+	/* Skip if transition accepted */
+	if (!si->bss_transition_response.status_code && current_time - si->bss_transition_response.timestamp < config.roam_kick_delay)
 		return false;
 
 	/* Skip on previous kick attempt */
