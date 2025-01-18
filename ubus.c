@@ -691,13 +691,14 @@ int usteer_ubus_bss_transition_request(struct sta_info *si,
 	blobmsg_add_u8(&b, "abridged", abridged);
 	blobmsg_add_u32(&b, "validity_period", validity_period);
 	blobmsg_add_u32(&b, "mbo_reason", 5);
+	blobmsg_add_u8(&b, "disassoc", false);
 
 	if (!target_node) {
 		// Add all known neighbors if no specific target set
 		MSG(VERBOSE, "roaming station " MAC_ADDR_FMT " without target\n", MAC_ADDR_DATA(si->sta->addr));
 		usteer_ubus_disassoc_add_neighbors(si);
 	} else {
-		MSG(VERBOSE, "roaming station " MAC_ADDR_FMT " to " MAC_ADDR_FMT " (%s) disassociation timer %u\n", MAC_ADDR_DATA(si->sta->addr), MAC_ADDR_DATA(target_node->bssid), usteer_node_name(target_node), disassoc_timer);
+		MSG(VERBOSE, "roaming station " MAC_ADDR_FMT " to " MAC_ADDR_FMT " (%s) disassociation timer %u, signal %d\n", MAC_ADDR_DATA(si->sta->addr), MAC_ADDR_DATA(target_node->bssid), usteer_node_name(target_node), disassoc_timer, si->signal);
 		usteer_ubus_disassoc_add_neighbor(si, target_node);
 	}
 	return ubus_invoke(ubus_ctx, ln->obj_id, "bss_transition_request", b.head, NULL, 0, 100);
@@ -725,6 +726,7 @@ int usteer_ubus_band_steering_request(struct sta_info *si,
 	blobmsg_add_u8(&b, "abridged", abridged);
 	blobmsg_add_u32(&b, "validity_period", validity_period);
 	blobmsg_add_u32(&b, "mbo_reason", 5);
+	blobmsg_add_u8(&b, "disassoc", false);
 
 	c = blobmsg_open_array(&b, "neighbors");
 	for_each_local_node(node) {
@@ -732,11 +734,11 @@ int usteer_ubus_band_steering_request(struct sta_info *si,
 			continue;
 	
 		usteer_add_nr_entry(si->node, node);
-		MSG(DEBUG, "band steering station " MAC_ADDR_FMT " adding neighbor " MAC_ADDR_FMT " (%s)\n", MAC_ADDR_DATA(si->sta->addr), disassoc_timer, si->signal, MAC_ADDR_DATA(node->bssid), usteer_node_name(node));
+		MSG(DEBUG, "band steering station " MAC_ADDR_FMT " adding neighbor " MAC_ADDR_FMT " (%s)\n", MAC_ADDR_DATA(si->sta->addr), MAC_ADDR_DATA(node->bssid), usteer_node_name(node));
 	}
 	blobmsg_close_array(&b, c);
 	if (sizeof(si->node) > 0) {
-		MSG(VERBOSE, "band steering station " MAC_ADDR_FMT " (disassociation timer %u, signal %d)\n", MAC_ADDR_DATA(si->sta->addr), disassoc_timer, si->signal);
+		MSG(VERBOSE, "band steering station " MAC_ADDR_FMT " disassociation timer %u, signal %d\n", MAC_ADDR_DATA(si->sta->addr), disassoc_timer, si->signal);
 		return ubus_invoke(ubus_ctx, ln->obj_id, "bss_transition_request", b.head, NULL, 0, 100);
 	} else
 		MSG(VERBOSE, "band steering no targets found for station " MAC_ADDR_FMT "\n", MAC_ADDR_DATA(si->sta->addr));
