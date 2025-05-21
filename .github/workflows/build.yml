@@ -5,7 +5,7 @@ on:
     inputs:
       openwrt_version:
        description: 'OpenWrt version'
-       default: '24.10.0'
+       default: 'snapshot'
        required: true
        type: string
   
